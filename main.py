@@ -21,10 +21,15 @@ class GestureFeature:
 
 
 def extract_feature(location, input_file, mid_frame_counter):
+    # Extract middle frame in grayscale
     middle_image = cv2.imread(fe.frameExtractor(location + input_file, location + "frames/", mid_frame_counter),
                               cv2.IMREAD_GRAYSCALE)
-    response = hfe.HandShapeFeatureExtractor.extract_feature(hfe.HandShapeFeatureExtractor.get_instance(),
-                                                             middle_image)
+    if middle_image is None:
+        print(f"Warning: Could not extract frame for {input_file}. Skipping.")
+        return None
+
+    # Extract features using the model
+    response = hfe.HandShapeFeatureExtractor.extract_feature(hfe.HandShapeFeatureExtractor.get_instance(), middle_image)
     return response
 
 
@@ -90,9 +95,11 @@ path_to_train_data = "traindata/"
 count = 0
 for file in os.listdir(path_to_train_data):
     if not file.startswith('.') and not file.startswith('frames') and not file.startswith('results'):
-        gesture_detail = decide_gesture_by_file_name(file)
+        gesture_detail = decide_gesture_by_file_name(file)      
         if gesture_detail:
-            featureVectorList.append(GestureFeature(gesture_detail, extract_feature(path_to_train_data, file, count)))
+            feature = extract_feature(path_to_train_data, file, count)
+            if feature is not None:
+                featureVectorList.append(GestureFeature(gesture_detail, feature))
         count += 1
 
 # =============================================================================
@@ -101,10 +108,14 @@ for file in os.listdir(path_to_train_data):
 video_locations = ["test/"]
 test_count = 0
 
+# =============================================================================
+# Get the penultimate layer for test data
+# =============================================================================
+video_locations = ["test/"]
+test_count = 0
+
 with open('Results.csv', 'w', newline='') as results_file:
-    fieldnames = ['Gesture_Video_File_Name', 'Gesture_Name', 'Output_Label']
-    train_data_writer = csv.DictWriter(results_file, fieldnames=fieldnames)
-    train_data_writer.writeheader()
+    train_data_writer = csv.writer(results_file)
 
     for video_location in video_locations:
         for test_file in os.listdir(video_location):
@@ -114,16 +125,8 @@ with open('Results.csv', 'w', newline='') as results_file:
                 recognized_gesture_detail = determine_gesture(video_location, test_file, test_count)
                 test_count += 1
 
-                # Write result to CSV
+                # Write only the output label to CSV
                 if recognized_gesture_detail:
-                    train_data_writer.writerow({
-                        'Gesture_Video_File_Name': test_file,
-                        'Gesture_Name': recognized_gesture_detail.gesture_name,
-                        'Output_Label': recognized_gesture_detail.output_label
-                    })
+                    train_data_writer.writerow([recognized_gesture_detail.output_label])
                 else:
-                    train_data_writer.writerow({
-                        'Gesture_Video_File_Name': test_file,
-                        'Gesture_Name': "Unrecognized",
-                        'Output_Label': "N/A"
-                    })
+                    train_data_writer.writerow(["N/A"])

@@ -101,7 +101,7 @@ for file in os.listdir(path_to_train_data):
 video_locations = ["test/"]
 test_count = 0
 
-with open('results.csv', 'w', newline='') as results_file:
+with open('Results.csv', 'w', newline='') as results_file:
     fieldnames = ['Gesture_Video_File_Name', 'Gesture_Name', 'Output_Label']
     train_data_writer = csv.DictWriter(results_file, fieldnames=fieldnames)
     train_data_writer.writeheader()

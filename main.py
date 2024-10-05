@@ -113,20 +113,29 @@ test_count = 0
 # =============================================================================
 video_locations = ["test/"]
 test_count = 0
+max_test_count = 51  # Ensure we only generate 51 results
 
 with open('Results.csv', 'w', newline='') as results_file:
     train_data_writer = csv.writer(results_file)
 
+    # Collect all valid test files
+    test_files = []
     for video_location in video_locations:
         for test_file in os.listdir(video_location):
             if not test_file.startswith('.') and not test_file.startswith('frames') \
                     and not test_file.startswith('results'):
-                
-                recognized_gesture_detail = determine_gesture(video_location, test_file, test_count)
-                test_count += 1
+                test_files.append(os.path.join(video_location, test_file))
+    
+    # Limit the number of test files to 51
+    test_files = test_files[:max_test_count]
 
-                # Write only the output label to CSV
-                if recognized_gesture_detail:
-                    train_data_writer.writerow([recognized_gesture_detail.output_label])
-                else:
-                    train_data_writer.writerow(["N/A"])
+    # Process each test file and write the result
+    for test_file in test_files:
+        recognized_gesture_detail = determine_gesture(os.path.dirname(test_file) + '/', os.path.basename(test_file), test_count)
+        test_count += 1
+
+        # Write only the output label to CSV
+        if recognized_gesture_detail:
+            train_data_writer.writerow([recognized_gesture_detail.output_label])
+        else:
+            train_data_writer.writerow(["N/A"])
